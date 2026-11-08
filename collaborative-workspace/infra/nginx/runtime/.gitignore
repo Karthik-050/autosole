@@ -1,0 +1,5 @@
+*.conf
+*.conf.*
+!00-default.conf
+!.gitkeep
+!.gitignore

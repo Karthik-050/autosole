@@ -1,0 +1,36 @@
+# Byte-compiled
+__pycache__/
+*.py[cod]
+
+# Checkpoint backup
+.backup_checkpoint/
+
+# Node
+node_modules/
+
+# Python Virtualenv
+venv/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Local secrets
+.env
+
+# Workspaces data
+workspace/*
+!workspace/.gitkeep
+
+# Runtime and generated Automator data
+new-automator/automator.db
+new-automator/logs/
+new-automator/repos/
+new-automator/projects/
+new-automator/test-temp/
+**/__pycache__/
+*.py[cod]
+*.log
+
+*.zip

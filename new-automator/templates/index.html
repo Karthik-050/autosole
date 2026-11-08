@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automator CI/CD - Git-Driven Automation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #151c2c;
+            --bg-card-hover: #1e293b;
+            --border: #243048;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-hover: #0284c7;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+        header { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+        .logo { display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem; font-weight: 700; color: var(--accent); }
+        .logo i { font-size: 1.5rem; }
+        .header-actions { display: flex; gap: 0.75rem; align-items: center; }
+
+        .btn { padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; border: none; transition: all 0.2s; text-decoration: none; }
+        .btn-primary { background: var(--accent); color: #0b0f19; }
+        .btn-primary:hover { background: var(--accent-hover); color: #fff; }
+        .btn-secondary { background: var(--border); color: var(--text-main); }
+        .btn-secondary:hover { background: #334155; }
+        .btn-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
+        .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.75rem; }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; width: 100%; flex: 1; }
+        .grid-layout { display: grid; grid-template-columns: 360px 1fr; gap: 1.5rem; }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+        .card-title { font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; color: var(--text-main); }
+
+        .repo-item { padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 0.75rem; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.01); }
+        .repo-item:hover, .repo-item.active { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
+        .repo-name { font-weight: 600; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
+        .repo-meta { font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 0.75rem; align-items: center; }
+
+        .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+        .badge-success { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-info { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-box { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem; }
+        .stat-val { font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
+        th { background: rgba(15, 23, 42, 0.5); padding: 0.75rem; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 0.75rem; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; width: 550px; max-width: 90%; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted); }
+        .form-control { width: 100%; padding: 0.6rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px; color: #fff; font-size: 0.875rem; }
+        .form-control:focus { outline: none; border-color: var(--accent); }
+
+        /* Logs viewer */
+        pre.log-terminal { background: #000; color: #10b981; padding: 1rem; border-radius: 6px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.8rem; height: 350px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; border: 1px solid #1e293b; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-rocket"></i>
+            <span>AUTOMATOR CI/CD</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openConnectModal()">
+                <i class="fa-solid fa-plus"></i> Connect Git Repository
+            </button>
+            <a href="/docs" target="_blank" class="btn btn-secondary">
+                <i class="fa-solid fa-book"></i> API Docs
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="grid-layout">
+
+            <!-- Left Panel: Repositories List -->
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-code-branch"></i> Connected Repositories
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="loadRepositories()">
+                            <i class="fa-solid fa-rotate"></i>
+                        </button>
+                    </div>
+                    <div id="repo-list">
+                        <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading repositories...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Overview, Pipeline & Builds -->
+            <div>
+                <!-- Repository Overview Card -->
+                <div class="card" id="repo-overview-card" style="display: none;">
+                    <div class="card-header">
+                        <div>
+                            <span id="overview-name" style="font-size: 1.25rem; font-weight: 700; color: var(--accent);"></span>
+                            <span id="overview-provider" class="badge badge-info" style="margin-left: 0.5rem;"></span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-primary btn-sm" onclick="triggerManualBuild()">
+                                <i class="fa-solid fa-play"></i> Trigger Build
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="syncRepository()">
+                                <i class="fa-solid fa-arrows-rotate"></i> Sync
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="openWebhookGuide()">
+                                <i class="fa-solid fa-webhook"></i> Webhook
+                            </button>
+                            <a id="preview-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="display: none;">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview
+                            </a>
+                            <button id="diag-btn" class="btn btn-secondary btn-sm" onclick="openDiagnosticsModal()" style="display: none;">
+                                <i class="fa-solid fa-stethoscope"></i> Diagnostics
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="disconnectRepository()">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="stat-grid">
+                        <div class="stat-box">
+                            <div class="stat-label">Branch</div>
+                            <div class="stat-val" id="overview-branch">-</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Detected Stack</div>
+                            <div class="stat-val" id="overview-stack">-</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Last Commit</div>
+                            <div class="stat-val" id="overview-commit" style="font-size: 0.9rem; font-family: monospace;">-</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Status</div>
+                            <div class="stat-val" id="overview-status">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Build History Table -->
+                    <div class="card-header" style="margin-top: 1.5rem;">
+                        <div class="card-title">
+                            <i class="fa-solid fa-clock-rotate-left"></i> Pipeline Builds
+                        </div>
+                    </div>
+                    <table id="builds-table">
+                        <thead>
+                            <tr>
+                                <th>Build</th>
+                                <th>Commit</th>
+                                <th>Trigger</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                                <th>Preview</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="builds-tbody">
+                            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No builds yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card" id="empty-state-card" style="text-align: center; padding: 4rem 2rem;">
+                    <i class="fa-solid fa-code-fork" style="font-size: 3rem; color: var(--border); margin-bottom: 1rem;"></i>
+                    <h3 style="color: var(--text-main); margin-bottom: 0.5rem;">No Repository Selected</h3>
+                    <p style="color: var(--text-muted); max-width: 400px; margin: 0 auto 1.5rem auto;">
+                        Connect a Git repository (GitHub/GitLab) or select an existing one to inspect pipeline status and logs.
+                    </p>
+                    <button class="btn btn-primary" onclick="openConnectModal()">
+                        <i class="fa-solid fa-plus"></i> Connect Git Repository
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Connect Repository Modal -->
+    <div class="modal" id="connect-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Connect Git Repository</h3>
+                <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal('connect-modal')"></i>
+            </div>
+            <form id="connect-form" onsubmit="submitConnectRepo(event)">
+                <div class="form-group">
+                    <label>Repository HTTPS URL *</label>
+                    <input type="url" id="repo-url" class="form-control" placeholder="https://github.com/owner/repository" required>
+                </div>
+                <div class="form-group">
+                    <label>Default Branch</label>
+                    <input type="text" id="repo-branch" class="form-control" value="main" placeholder="main">
+                </div>
+                <div class="form-group">
+                    <label>Personal Access Token (for Private Repositories)</label>
+                    <input type="password" id="repo-token" class="form-control" placeholder="ghp_... or leave blank for public">
+                </div>
+                <div class="form-group">
+                    <label>Webhook Secret</label>
+                    <input type="text" id="repo-webhook-secret" class="form-control" placeholder="Auto-generated if left blank">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('connect-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Connect & Analyze</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Webhook Guide Modal -->
+    <div class="modal" id="webhook-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-brands fa-github"></i> GitHub Webhook Setup Guide</h3>
+                <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal('webhook-modal')"></i>
+            </div>
+            <div style="font-size: 0.9rem; line-height: 1.6; color: var(--text-muted);">
+                <p style="margin-bottom: 0.75rem;">Configure your GitHub repository to trigger zero-downtime builds on <code>push</code> and <code>pull_request</code> events:</p>
+                <ol style="margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Navigate to your GitHub repository -> <strong>Settings</strong> -> <strong>Webhooks</strong> -> <strong>Add webhook</strong></li>
+                    <li>Set <strong>Payload URL</strong> to:</li>
+                </ol>
+                <div style="background: var(--bg-main); padding: 0.6rem; border-radius: 4px; border: 1px solid var(--border); font-family: monospace; color: var(--accent); margin-bottom: 1rem; word-break: break-all;" id="webhook-url-display">
+                    https://&lt;your-domain&gt;/webhooks/github
+                </div>
+                <ol start="3" style="margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Set <strong>Content type</strong> to <code>application/json</code></li>
+                    <li>Set <strong>Secret</strong> to:</li>
+                </ol>
+                <div style="background: var(--bg-main); padding: 0.6rem; border-radius: 4px; border: 1px solid var(--border); font-family: monospace; color: var(--accent); margin-bottom: 1rem; word-break: break-all;" id="webhook-secret-display">
+                    -
+                </div>
+                <ol start="5" style="margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Select <strong>Let me select individual events</strong>: Check <strong>Pushes</strong> and <strong>Pull requests</strong></li>
+                    <li>Click <strong>Add webhook</strong></li>
+                </ol>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('webhook-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Modal -->
+    <div class="modal" id="logs-modal">
+        <div class="modal-content" style="width: 850px;">
+            <div class="modal-header">
+                <h3 id="logs-modal-title">Pipeline Build Logs</h3>
+                <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal('logs-modal')"></i>
+            </div>
+            <pre class="log-terminal" id="log-content">Loading log output...</pre>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                <button class="btn btn-secondary btn-sm" onclick="refreshCurrentLogs()">
+                    <i class="fa-solid fa-rotate"></i> Refresh Logs
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('logs-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnostics Modal -->
+    <div class="modal" id="diag-modal">
+        <div class="modal-content" style="width: 700px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-stethoscope"></i> Preview Diagnostics</h3>
+                <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="closeModal('diag-modal')"></i>
+            </div>
+            <div id="diag-content">Loading diagnostics...</div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('diag-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedRepoId = null;
+        let activeBuildId = null;
+
+        async function api(path, options = {}) {
+            const res = await fetch(path, {
+                headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+                ...options
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ detail: res.statusText }));
+                throw new Error(err.detail || 'Request failed');
+            }
+            return res.json();
+        }
+
+        async function loadRepositories() {
+            try {
+                const repos = await api('/repositories');
+                const list = document.getElementById('repo-list');
+                if (repos.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No repositories connected yet.</div>';
+                    return;
+                }
+                list.innerHTML = repos.map(r => `
+                    <div class="repo-item ${r.id === selectedRepoId ? 'active' : ''}" onclick="selectRepo('${r.id}')">
+                        <div class="repo-name">
+                            <span>${r.name}</span>
+                            <span class="badge ${r.status === 'active' ? 'badge-success' : 'badge-danger'}">${r.status}</span>
+                        </div>
+                        <div class="repo-meta">
+                            <span><i class="fa-solid fa-code-branch"></i> ${r.default_branch}</span>
+                            <span><i class="fa-brands fa-github"></i> ${r.owner}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                if (selectedRepoId) {
+                    selectRepo(selectedRepoId);
+                } else if (repos.length > 0) {
+                    selectRepo(repos[0].id);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function selectRepo(repoId) {
+            selectedRepoId = repoId;
+            document.querySelectorAll('.repo-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('empty-state-card').style.display = 'none';
+            document.getElementById('repo-overview-card').style.display = 'block';
+
+            try {
+                const repo = await api(`/repositories/${repoId}`);
+                document.getElementById('overview-name').innerText = `${repo.owner}/${repo.name}`;
+                document.getElementById('overview-provider').innerText = repo.provider;
+                document.getElementById('overview-branch').innerText = repo.default_branch;
+                document.getElementById('overview-status').innerHTML = `<span class="badge badge-success">${repo.status}</span>`;
+
+                const previewBtn = document.getElementById('preview-btn');
+                previewBtn.href = `/preview/${repo.id}/`;
+                previewBtn.style.display = 'inline-flex';
+
+                const diagBtn = document.getElementById('diag-btn');
+                if (diagBtn) diagBtn.style.display = 'inline-flex';
+
+                loadRepoBuilds(repoId);
+            } catch (err) {
+                alert('Failed loading repo: ' + err.message);
+            }
+        }
+
+        async function loadRepoBuilds(repoId) {
+            try {
+                const builds = await api(`/repositories/${repoId}/builds`);
+                const tbody = document.getElementById('builds-tbody');
+                if (builds.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No builds yet</td></tr>';
+                    document.getElementById('overview-stack').innerText = 'Pending Build';
+                    document.getElementById('overview-commit').innerText = '-';
+                    return;
+                }
+
+                const latest = builds[0];
+                if (latest.detected_stack) {
+                    const stack = latest.detected_stack;
+                    document.getElementById('overview-stack').innerText = `${stack.language || 'generic'} (${stack.framework || 'plain'})`;
+                }
+                if (latest.commit_sha) {
+                    document.getElementById('overview-commit').innerText = latest.commit_sha.substring(0, 8);
+                }
+
+                tbody.innerHTML = builds.map(b => `
+                    <tr>
+                        <td><strong>#${b.build_number}</strong></td>
+                        <td><code>${(b.commit_sha || '').substring(0, 7)}</code></td>
+                        <td><span class="badge badge-info">${b.trigger_type}</span></td>
+                        <td>
+                            <span class="badge ${b.status === 'success' ? 'badge-success' : (b.status === 'failed' ? 'badge-danger' : 'badge-warning')}">
+                                ${b.status}
+                            </span>
+                        </td>
+                        <td>${b.duration_seconds ? b.duration_seconds.toFixed(1) + 's' : '-'}</td>
+                        <td>
+                            ${b.status === 'success' ? `<a href="/preview/${repoId}/" target="_blank" class="btn btn-secondary btn-sm"><i class="fa-solid fa-eye"></i> View</a>` : '-'}
+                        </td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm" onclick="viewLogs('${b.id}', ${b.build_number})">
+                                <i class="fa-solid fa-terminal"></i> Logs
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function submitConnectRepo(e) {
+            e.preventDefault();
+            const url = document.getElementById('repo-url').value.trim();
+            const branch = document.getElementById('repo-branch').value.trim() || 'main';
+            const token = document.getElementById('repo-token').value.trim() || null;
+            const secret = document.getElementById('repo-webhook-secret').value.trim() || null;
+
+            try {
+                const created = await api('/repositories', {
+                    method: 'POST',
+                    body: JSON.stringify({ url, default_branch: branch, credential_token: token, webhook_secret: secret })
+                });
+                closeModal('connect-modal');
+                await loadRepositories();
+                selectRepo(created.id);
+            } catch (err) {
+                alert('Connection error: ' + err.message);
+            }
+        }
+
+        async function triggerManualBuild() {
+            if (!selectedRepoId) return;
+            try {
+                const build = await api(`/repositories/${selectedRepoId}/builds`, { method: 'POST' });
+                loadRepoBuilds(selectedRepoId);
+                viewLogs(build.id, build.build_number);
+            } catch (err) {
+                alert('Trigger failed: ' + err.message);
+            }
+        }
+
+        async function syncRepository() {
+            if (!selectedRepoId) return;
+            try {
+                await api(`/repositories/${selectedRepoId}/sync`, { method: 'POST' });
+                selectRepo(selectedRepoId);
+                alert('Repository synced successfully.');
+            } catch (err) {
+                alert('Sync failed: ' + err.message);
+            }
+        }
+
+        async function disconnectRepository() {
+            if (!selectedRepoId || !confirm('Are you sure you want to disconnect this repository?')) return;
+            try {
+                await api(`/repositories/${selectedRepoId}`, { method: 'DELETE' });
+                selectedRepoId = null;
+                document.getElementById('repo-overview-card').style.display = 'none';
+                document.getElementById('empty-state-card').style.display = 'block';
+                loadRepositories();
+            } catch (err) {
+                alert('Disconnect failed: ' + err.message);
+            }
+        }
+
+        async function viewLogs(buildId, buildNumber) {
+            activeBuildId = buildId;
+            document.getElementById('logs-modal-title').innerText = `Pipeline Build #${buildNumber} Logs`;
+            document.getElementById('logs-modal').classList.add('active');
+            await refreshCurrentLogs();
+        }
+
+        async function refreshCurrentLogs() {
+            if (!activeBuildId) return;
+            try {
+                const data = await api(`/builds/${activeBuildId}/logs`);
+                document.getElementById('log-content').innerText = data.logs || 'No logs captured yet.';
+            } catch (err) {
+                document.getElementById('log-content').innerText = 'Could not load logs: ' + err.message;
+            }
+        }
+
+        async function openWebhookGuide() {
+            if (!selectedRepoId) return;
+            try {
+                const status = await api(`/repositories/${selectedRepoId}/webhook-status`);
+                document.getElementById('webhook-url-display').innerText = window.location.origin + '/webhooks/github';
+                document.getElementById('webhook-secret-display').innerText = status.webhook_secret || 'No secret set';
+                document.getElementById('webhook-modal').classList.add('active');
+            } catch (err) {
+                alert('Failed getting webhook status: ' + err.message);
+            }
+        }
+
+        async function openDiagnosticsModal() {
+            if (!selectedRepoId) return;
+            const modal = document.getElementById('diag-modal');
+            const content = document.getElementById('diag-content');
+            modal.classList.add('active');
+            content.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Inspecting preview container, ports, and networking...</div>';
+            try {
+                const data = await api(`/api/diagnostics/preview/${selectedRepoId}`);
+                let statusBadge = data.status === 'healthy' ? '<span class="badge badge-success">HEALTHY</span>' : (data.status === 'gateway_offline' ? '<span class="badge badge-warning">GATEWAY OFFLINE</span>' : '<span class="badge badge-danger">' + data.status.toUpperCase() + '</span>');
+                let depHtml = '';
+                if (data.deployment) {
+                    depHtml = `
+                    <div style="margin-top: 1rem; background: var(--bg-main); padding: 1rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem; line-height: 1.6;">
+                        <div><strong>Container:</strong> <code>${data.deployment.container_name}</code></div>
+                        <div><strong>Port Mapping:</strong> Host <code>${data.deployment.host_port}</code> &rarr; Container <code>${data.deployment.container_port}</code></div>
+                        <div><strong>Docker Status:</strong> ${data.docker.status} (${data.docker.health})</div>
+                        <div><strong>Direct Probe:</strong> ${data.direct_probe.reachable ? '<span style="color: #34d399;">Reachable (HTTP ' + data.direct_probe.status_code + ')</span>' : '<span style="color: #f87171;">Unreachable (' + data.direct_probe.error + ')</span>'}</div>
+                    </div>
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="${data.gateway_preview_url}" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-eye"></i> Gateway URL</a>
+                        ${data.direct_container_url ? `<a href="${data.direct_container_url}" target="_blank" class="btn btn-secondary btn-sm"><i class="fa-solid fa-server"></i> Direct URL (${data.direct_container_url})</a>` : ''}
+                    </div>`;
+                } else {
+                    depHtml = '<div style="margin-top: 1rem; color: var(--text-muted);">No deployment found.</div>';
+                }
+
+                let recHtml = '';
+                if (data.recommendations && data.recommendations.length > 0) {
+                    recHtml = `<div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+                        <strong>Notes & Recommendations:</strong>
+                        <ul style="margin-left: 1.2rem; margin-top: 0.35rem;">
+                            ${data.recommendations.map(r => `<li>${r}</li>`).join('')}
+                        </ul>
+                    </div>`;
+                }
+
+                content.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+                        <span style="font-weight: 600;">Overall Status</span>
+                        ${statusBadge}
+                    </div>
+                    ${depHtml}
+                    ${recHtml}
+                `;
+            } catch (err) {
+                content.innerHTML = `<div style="color: var(--danger);">Failed loading diagnostics: ${err.message}</div>`;
+            }
+        }
+
+        function openConnectModal() {
+            document.getElementById('connect-modal').classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // Initialize on page load
+        window.onload = loadRepositories;
+        // Auto-refresh builds every 5s if on active repo
+        setInterval(() => {
+            if (selectedRepoId) {
+                loadRepoBuilds(selectedRepoId);
+            }
+            if (activeBuildId && document.getElementById('logs-modal').classList.contains('active')) {
+                refreshCurrentLogs();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

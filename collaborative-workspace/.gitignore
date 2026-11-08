@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+.backup_checkpoint/
+
+# IDE files
+.idea/
+.vscode/
+
+# Local secrets
+.env
+
+# Workspace user data
+workspace/*
+!workspace/.gitkeep
+workspace/.deployments.json
+workspace/.workspaces_meta.json
