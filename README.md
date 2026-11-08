@@ -1,4 +1,4 @@
-# Project K — Workspace and Automator CI/CD
+ # Project K — Workspace and Automator CI/CD
 
 Project K contains two FastAPI applications and a Vue web interface:
 
@@ -185,5 +185,6 @@ cd ..
 - **Jenkins reports unavailable:** check Jenkins URL, credentials, network access, and that the controller is running.
 - **Docker build or preview fails:** confirm Docker is running and inspect build/pipeline logs. A started API or a queued build does not guarantee that an application container is healthy.
 - **GitHub webhook does not arrive:** use the current public HTTPS tunnel URL, configure the correct webhook path and event, and ensure the app and GitHub use the same webhook secret.
-#   a u t o s o l e  
+#   a u t o s o l e 
+ 
  
