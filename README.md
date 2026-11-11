@@ -1,4 +1,4 @@
-# Project K — Workspace and Automator CI/CD
+# AUTOSOLE CI/CD
 
 Project K contains two FastAPI applications and a Vue web interface:
 
